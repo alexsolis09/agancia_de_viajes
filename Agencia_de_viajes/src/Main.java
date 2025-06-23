@@ -1,70 +1,108 @@
 
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.*;
 
 // -----------------------------
-// SINGLETON: AgenciaReservas
+// SINGLETON: Usuario
 // -----------------------------
-class AgenciaReservas {
-    private static AgenciaReservas instancia;
+class Usuario {
+    private static Usuario instancia;
+    private String nombre;
 
-    private AgenciaReservas() {}
+    private Usuario() {}
 
-    public static AgenciaReservas getInstancia() {
+    public static Usuario getInstancia() {
         if (instancia == null) {
-            instancia = new AgenciaReservas();
+            instancia = new Usuario();
         }
         return instancia;
     }
 
-    public void reservarServicio(Servicio servicio) {
-        servicio.reservar();
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getNombre() {
+        return nombre;
     }
 }
 
 // -----------------------------
-// INTERFAZ Servicio
+// BUILDER: ReservaVuelo
+// -----------------------------
+class ReservaVuelo {
+    private String origen;
+    private String destino;
+    private Date fechaHora;
+    private double precio;
+
+    public ReservaVuelo(String origen, String destino, Date fechaHora, double precio) {
+        this.origen = origen;
+        this.destino = destino;
+        this.fechaHora = fechaHora;
+        this.precio = precio;
+    }
+
+    public String getResumen() {
+        return "Reserva: " + origen + " ➡ " + destino +
+                "\nFecha: " + fechaHora +
+                "\nPrecio: $" + precio;
+    }
+}
+
+class ReservaBuilder {
+    private String origen;
+    private String destino;
+    private Date fechaHora;
+    private double precio;
+
+    public ReservaBuilder setOrigen(String origen) {
+        this.origen = origen;
+        return this;
+    }
+
+    public ReservaBuilder setDestino(String destino) {
+        this.destino = destino;
+        return this;
+    }
+
+    public ReservaBuilder setFechaHora(Date fechaHora) {
+        this.fechaHora = fechaHora;
+        return this;
+    }
+
+    public ReservaBuilder setPrecio(double precio) {
+        this.precio = precio;
+        return this;
+    }
+
+    public ReservaVuelo build() {
+        return new ReservaVuelo(origen, destino, fechaHora, precio);
+    }
+}
+
+// -----------------------------
+// ADAPTER: Vuelo externo
 // -----------------------------
 interface Servicio {
-    void reservar();
+    void reservar(ReservaVuelo reserva);
 }
 
-// -----------------------------
-// SERVICIOS CONCRETOS
-// -----------------------------
-class Hotel implements Servicio {
-    @Override
-    public void reservar() {
-        JOptionPane.showMessageDialog(null, "🏨 Hotel reservado correctamente.");
-    }
-}
-
-class Auto implements Servicio {
-    @Override
-    public void reservar() {
-        JOptionPane.showMessageDialog(null, "🚗 Auto alquilado exitosamente.");
-    }
-}
-
-class ProveedorVueloExterno {
-    public void hacerReservaVuelo() {
-        JOptionPane.showMessageDialog(null, "✈️ Vuelo reservado con proveedor externo.");
+class ProveedorExterno {
+    public void reservarVuelo(String origen, String destino, Date fecha, double precio) {
+        JOptionPane.showMessageDialog(null, "✈ Vuelo confirmado con proveedor externo:\n" +
+                origen + " ➡ " + destino + "\nFecha: " + fecha + "\nPrecio: $" + precio);
     }
 }
 
 class VueloAdapter implements Servicio {
-    private ProveedorVueloExterno proveedor;
-
-    public VueloAdapter(ProveedorVueloExterno proveedor) {
-        this.proveedor = proveedor;
-    }
+    private ProveedorExterno proveedor = new ProveedorExterno();
 
     @Override
-    public void reservar() {
-        proveedor.hacerReservaVuelo();
+    public void reservar(ReservaVuelo reserva) {
+        proveedor.reservarVuelo(reserva.origen, reserva.destino, reserva.fechaHora, reserva.precio);
     }
 }
 
@@ -76,14 +114,12 @@ interface MetodoPago {
 }
 
 class PagoTarjeta implements MetodoPago {
-    @Override
     public void pagar(double monto) {
         JOptionPane.showMessageDialog(null, "💳 Pago de $" + monto + " realizado con tarjeta.");
     }
 }
 
 class PagoPayPal implements MetodoPago {
-    @Override
     public void pagar(double monto) {
         JOptionPane.showMessageDialog(null, "💻 Pago de $" + monto + " realizado con PayPal.");
     }
@@ -92,160 +128,148 @@ class PagoPayPal implements MetodoPago {
 class ProcesadorPago {
     private MetodoPago metodo;
 
-    public void setMetodoPago(MetodoPago metodo) {
+    public void setMetodo(MetodoPago metodo) {
         this.metodo = metodo;
     }
 
-    public void procesarPago(double monto) {
+    public void procesar(double monto) {
         if (metodo != null) {
             metodo.pagar(monto);
-        } else {
-            JOptionPane.showMessageDialog(null, "⚠️ No se ha seleccionado método de pago.");
         }
     }
 }
 
 // -----------------------------
-// GUI Mejorada integrada con lógica
+// GUI Principal
 // -----------------------------
 public class Main {
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new InterfazReservasMejorada().crearVentana());
+        SwingUtilities.invokeLater(() -> new RegistroVentana().mostrar());
     }
 }
 
-class InterfazReservasMejorada {
+class RegistroVentana {
     private JFrame frame;
-    private JComboBox<String> comboServicios;
-    private JComboBox<String> comboPago;
-    private JTextField txtMonto;
-    private JButton btnReservar;
-    private JButton btnSalir;
-
-    public void crearVentana() {
-        frame = new JFrame("🧳 Agencia de Viajes Mejorada");
+    public void mostrar() {
+        frame = new JFrame("Registro Usuario");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(420, 320);
-        frame.setLocationRelativeTo(null);
+        frame.setSize(300, 150);
+        frame.setLayout(new BorderLayout());
 
-        JPanel panel = new JPanel();
-        panel.setBackground(new Color(245, 245, 245));
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+        JTextField campoNombre = new JTextField();
+        JButton continuar = new JButton("Continuar");
+        JLabel label = new JLabel("Ingrese su nombre para reservar un vuelo:");
+        label.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JLabel lblServicio = new JLabel("Seleccione servicio:");
-        lblServicio.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        comboServicios = new JComboBox<>(new String[]{"Hotel", "Auto", "Vuelo"});
-        comboServicios.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        comboServicios.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-
-        JLabel lblPago = new JLabel("Método de pago:");
-        lblPago.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        comboPago = new JComboBox<>(new String[]{"Tarjeta", "PayPal"});
-        comboPago.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        comboPago.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-
-        JLabel lblMonto = new JLabel("Monto a pagar ($):");
-        lblMonto.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        txtMonto = new JTextField();
-        txtMonto.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txtMonto.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-
-        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        panelBotones.setBackground(new Color(245, 245, 245));
-
-        btnReservar = new JButton("✅ Reservar");
-        btnReservar.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnReservar.setEnabled(false);
-        btnReservar.setBackground(new Color(100, 180, 100));
-        btnReservar.setForeground(Color.WHITE);
-        btnReservar.setFocusPainted(false);
-
-        btnSalir = new JButton("❌ Salir");
-        btnSalir.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnSalir.setBackground(new Color(200, 80, 80));
-        btnSalir.setForeground(Color.WHITE);
-        btnSalir.setFocusPainted(false);
-
-        panel.add(lblServicio);
-        panel.add(Box.createRigidArea(new Dimension(0, 5)));
-        panel.add(comboServicios);
-        panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
-        panel.add(lblPago);
-        panel.add(Box.createRigidArea(new Dimension(0, 5)));
-        panel.add(comboPago);
-        panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
-        panel.add(lblMonto);
-        panel.add(Box.createRigidArea(new Dimension(0, 5)));
-        panel.add(txtMonto);
-        panel.add(Box.createRigidArea(new Dimension(0, 20)));
-
-        panelBotones.add(btnReservar);
-        panelBotones.add(btnSalir);
-        panel.add(panelBotones);
-
-        frame.add(panel);
-
-        btnReservar.addActionListener(e -> realizarReserva());
-        btnSalir.addActionListener(e -> frame.dispose());
-
-        txtMonto.getDocument().addDocumentListener(new DocumentListener() {
-            void validar() {
-                String texto = txtMonto.getText().trim();
-                boolean valido = texto.matches("\\d*(\\.\\d{0,2})?") && !texto.isEmpty();
-                btnReservar.setEnabled(valido);
+        continuar.addActionListener(e -> {
+            String nombre = campoNombre.getText().trim();
+            if (!nombre.isEmpty()) {
+                Usuario.getInstancia().setNombre(nombre);
+                frame.dispose();
+                new VentanaReserva().mostrar();
             }
-            @Override public void insertUpdate(DocumentEvent e) { validar(); }
-            @Override public void removeUpdate(DocumentEvent e) { validar(); }
-            @Override public void changedUpdate(DocumentEvent e) { validar(); }
         });
 
+        frame.add(label, BorderLayout.NORTH);
+        frame.add(campoNombre, BorderLayout.CENTER);
+        frame.add(continuar, BorderLayout.SOUTH);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class VentanaReserva {
+    private JFrame frame;
+    private JComboBox<String> origen, destino, metodoPago;
+    private JSpinner spinnerFecha, spinnerHora;
+    private JLabel precioLabel;
+
+    private final Map<String, Double> precios = new HashMap<>();
+
+    public void mostrar() {
+        frame = new JFrame("Reserva de Vuelo");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(400, 350);
+        frame.setLayout(new GridLayout(8, 1));
+
+        origen = new JComboBox<>(new String[]{"El Salvador", "México", "EE.UU."});
+        destino = new JComboBox<>(new String[]{"Colombia", "España", "Canadá"});
+        metodoPago = new JComboBox<>(new String[]{"Tarjeta", "PayPal"});
+
+        spinnerFecha = new JSpinner(new SpinnerDateModel());
+        spinnerFecha.setEditor(new JSpinner.DateEditor(spinnerFecha, "yyyy-MM-dd"));
+
+        spinnerHora = new JSpinner(new SpinnerDateModel());
+        spinnerHora.setEditor(new JSpinner.DateEditor(spinnerHora, "HH:mm"));
+
+        precios.put("El Salvador-Colombia", 300.0);
+        precios.put("El Salvador-España", 850.0);
+        precios.put("El Salvador-Canadá", 750.0);
+        precios.put("México-Colombia", 280.0);
+        precios.put("México-España", 820.0);
+        precios.put("México-Canadá", 700.0);
+        precios.put("EE.UU.-Colombia", 350.0);
+        precios.put("EE.UU.-España", 900.0);
+        precios.put("EE.UU.-Canadá", 400.0);
+
+        precioLabel = new JLabel("Precio: $0.00", SwingConstants.CENTER);
+        JButton reservarBtn = new JButton("Reservar Vuelo");
+
+        origen.addActionListener(e -> actualizarPrecio());
+        destino.addActionListener(e -> actualizarPrecio());
+
+        reservarBtn.addActionListener(e -> reservar());
+
+        frame.add(new JLabel("Origen:")); frame.add(origen);
+        frame.add(new JLabel("Destino:")); frame.add(destino);
+        frame.add(new JLabel("Fecha:")); frame.add(spinnerFecha);
+        frame.add(new JLabel("Hora:")); frame.add(spinnerHora);
+        frame.add(precioLabel);
+        frame.add(metodoPago);
+        frame.add(reservarBtn);
+
+        actualizarPrecio();
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
-    private void realizarReserva() {
-        String servicioSeleccionado = (String) comboServicios.getSelectedItem();
-        String metodoSeleccionado = (String) comboPago.getSelectedItem();
-        double monto;
+    private void actualizarPrecio() {
+        String key = origen.getSelectedItem() + "-" + destino.getSelectedItem();
+        double precio = precios.getOrDefault(key, 999.99);
+        precioLabel.setText("Precio: $" + precio);
+    }
 
-        try {
-            monto = Double.parseDouble(txtMonto.getText());
-            if (monto <= 0) {
-                JOptionPane.showMessageDialog(frame, "Ingrese un monto mayor a cero.");
-                return;
-            }
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(frame, "Monto inválido.");
+    private void reservar() {
+        String o = (String) origen.getSelectedItem();
+        String d = (String) destino.getSelectedItem();
+        if (o.equals(d)) {
+            JOptionPane.showMessageDialog(frame, "El país de origen y destino no pueden ser iguales.");
             return;
         }
+        Calendar cal = Calendar.getInstance();
+        cal.setTime((Date) spinnerFecha.getValue());
+        Calendar hora = Calendar.getInstance();
+        hora.setTime((Date) spinnerHora.getValue());
+        cal.set(Calendar.HOUR_OF_DAY, hora.get(Calendar.HOUR_OF_DAY));
+        cal.set(Calendar.MINUTE, hora.get(Calendar.MINUTE));
 
-        AgenciaReservas agencia = AgenciaReservas.getInstancia();
+        String key = o + "-" + d;
+        double precio = precios.getOrDefault(key, 999.99);
 
-        Servicio servicio;
-        switch (servicioSeleccionado) {
-            case "Hotel":
-                servicio = new Hotel();
-                break;
-            case "Auto":
-                servicio = new Auto();
-                break;
-            case "Vuelo":
-                servicio = new VueloAdapter(new ProveedorVueloExterno());
-                break;
-            default:
-                JOptionPane.showMessageDialog(frame, "Servicio no válido.");
-                return;
-        }
+        ReservaVuelo reserva = new ReservaBuilder()
+                .setOrigen(o)
+                .setDestino(d)
+                .setFechaHora(cal.getTime())
+                .setPrecio(precio)
+                .build();
 
-        MetodoPago metodo = metodoSeleccionado.equals("Tarjeta") ? new PagoTarjeta() : new PagoPayPal();
+        new VueloAdapter().reservar(reserva);
 
-        // Ejecutar reserva y pago
-        agencia.reservarServicio(servicio);
+        MetodoPago metodo = metodoPago.getSelectedItem().equals("Tarjeta")
+                ? new PagoTarjeta() : new PagoPayPal();
 
         ProcesadorPago procesador = new ProcesadorPago();
-        procesador.setMetodoPago(metodo);
-        procesador.procesarPago(monto);
+        procesador.setMetodo(metodo);
+        procesador.procesar(precio);
     }
 }
