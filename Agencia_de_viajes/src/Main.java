@@ -1,4 +1,3 @@
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -33,10 +32,10 @@ class Usuario {
 // BUILDER: ReservaVuelo
 // -----------------------------
 class ReservaVuelo {
-    private String origen;
-    private String destino;
-    private Date fechaHora;
-    private double precio;
+    String origen;
+    String destino;
+    Date fechaHora;
+    double precio;
 
     public ReservaVuelo(String origen, String destino, Date fechaHora, double precio) {
         this.origen = origen;
@@ -140,7 +139,7 @@ class ProcesadorPago {
 }
 
 // -----------------------------
-// GUI Principal
+// MAIN
 // -----------------------------
 public class Main {
     public static void main(String[] args) {
@@ -148,8 +147,12 @@ public class Main {
     }
 }
 
+// -----------------------------
+// VENTANA 1: Registro de usuario
+// -----------------------------
 class RegistroVentana {
     private JFrame frame;
+
     public void mostrar() {
         frame = new JFrame("Registro Usuario");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -167,6 +170,8 @@ class RegistroVentana {
                 Usuario.getInstancia().setNombre(nombre);
                 frame.dispose();
                 new VentanaReserva().mostrar();
+            } else {
+                JOptionPane.showMessageDialog(frame, "Por favor, ingrese su nombre.");
             }
         });
 
@@ -178,6 +183,9 @@ class RegistroVentana {
     }
 }
 
+// -----------------------------
+// VENTANA 2: Reserva de vuelo
+// -----------------------------
 class VentanaReserva {
     private JFrame frame;
     private JComboBox<String> origen, destino, metodoPago;
@@ -189,8 +197,8 @@ class VentanaReserva {
     public void mostrar() {
         frame = new JFrame("Reserva de Vuelo");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(400, 350);
-        frame.setLayout(new GridLayout(8, 1));
+        frame.setSize(400, 400);
+        frame.setLayout(new GridLayout(10, 1));
 
         origen = new JComboBox<>(new String[]{"El Salvador", "México", "EE.UU."});
         destino = new JComboBox<>(new String[]{"Colombia", "España", "Canadá"});
@@ -202,6 +210,9 @@ class VentanaReserva {
         spinnerHora = new JSpinner(new SpinnerDateModel());
         spinnerHora.setEditor(new JSpinner.DateEditor(spinnerHora, "HH:mm"));
 
+        precioLabel = new JLabel("Precio: $0.00", SwingConstants.CENTER);
+        JButton reservarBtn = new JButton("Reservar Vuelo");
+
         precios.put("El Salvador-Colombia", 300.0);
         precios.put("El Salvador-España", 850.0);
         precios.put("El Salvador-Canadá", 750.0);
@@ -211,9 +222,6 @@ class VentanaReserva {
         precios.put("EE.UU.-Colombia", 350.0);
         precios.put("EE.UU.-España", 900.0);
         precios.put("EE.UU.-Canadá", 400.0);
-
-        precioLabel = new JLabel("Precio: $0.00", SwingConstants.CENTER);
-        JButton reservarBtn = new JButton("Reservar Vuelo");
 
         origen.addActionListener(e -> actualizarPrecio());
         destino.addActionListener(e -> actualizarPrecio());
@@ -225,7 +233,7 @@ class VentanaReserva {
         frame.add(new JLabel("Fecha:")); frame.add(spinnerFecha);
         frame.add(new JLabel("Hora:")); frame.add(spinnerHora);
         frame.add(precioLabel);
-        frame.add(metodoPago);
+        frame.add(new JLabel("Método de pago:")); frame.add(metodoPago);
         frame.add(reservarBtn);
 
         actualizarPrecio();
@@ -246,6 +254,7 @@ class VentanaReserva {
             JOptionPane.showMessageDialog(frame, "El país de origen y destino no pueden ser iguales.");
             return;
         }
+
         Calendar cal = Calendar.getInstance();
         cal.setTime((Date) spinnerFecha.getValue());
         Calendar hora = Calendar.getInstance();
@@ -265,9 +274,7 @@ class VentanaReserva {
 
         new VueloAdapter().reservar(reserva);
 
-        MetodoPago metodo = metodoPago.getSelectedItem().equals("Tarjeta")
-                ? new PagoTarjeta() : new PagoPayPal();
-
+        MetodoPago metodo = metodoPago.getSelectedItem().equals("Tarjeta") ? new PagoTarjeta() : new PagoPayPal();
         ProcesadorPago procesador = new ProcesadorPago();
         procesador.setMetodo(metodo);
         procesador.procesar(precio);
